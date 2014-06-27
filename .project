@@ -1,18 +1,18 @@
-class Genomamin:
+class Genomabin:
 	import random
 	
 	def run(fNameArray): #fNameArray is an array with all of the file names containing the binary file data, which the user enters
-		rawData = Genomamin.compileRawData(fNameArray)
-		normalData = Genomamin.normalizeArray(rawData)
-		valueArray = Genomamin.generateSeeds(normalData)
+		rawData = Genomabin.compileRawData(fNameArray)
+		normalData = Genomabin.normalizeArray(rawData)
+		valueArray = Genomabin.generateSeeds(normalData)
 		seedLocationArray = valueArray[0]
 		arrayLength = valueArray[1]
-		clusterArray = Genomamin.clusterData(seedLocationArray, normalData, arrayLength)
+		clusterArray = Genomabin.clusterData(seedLocationArray, normalData, arrayLength)
 		
 	def readBinFile(fName):
 		import sys, traceback, array
 		f = open(fName, 'rb')
-		thisBatchCnt = 1930 #this controls how many values are read in
+		thisBatchCnt = -1 #this controls how many values are read in
 		binValues = array.array('d') #'d' double
 		binValues.fromfile(f,thisBatchCnt)
 		return(binValues)
@@ -32,13 +32,13 @@ class Genomamin:
 	def compileRawData(fNameArray):
 		rawDataArray = [[]]
 		for file in fNameArray:
-			arraySection = Genomamin.readBinFile(file)
-			maxMinArray = GenomaminmaxMin(file)
+			arraySection = Genomabin.readBinFile(file)
+			maxMinArray = GenomabinmaxMin(file)
 			maximum = maxMinArray[0]
 			minimum = maxMinArray[1]
 			sectionLength = len(arraySection) #THIS NEEDS TO BE USED FOR READING IN ALL VALUES FROM READBINFILE()
-			byteArray = Genomamin.convertToByte(arraySection, sectionLength)
-			organizedSection = Genomamin.organizeArray(byteArray, sectionLength)
+			byteArray = Genomabin.convertToByte(arraySection, sectionLength)
+			organizedSection = Genomabin.organizeArray(byteArray, sectionLength)
 			rawDataArray += organizedSection
 		return(rawDataArray)
 			
@@ -64,7 +64,7 @@ class Genomamin:
 	def normalizeArray(rawData):
 		normalizedArray = [[]]
 		for row in rawData:
-			normalRow = Genomamin.normalizeData(row)
+			normalRow = Genomabin.normalizeData(row)
 			normalizedArray.append[normalRow]
 		return(normalizedArray)
 		
@@ -91,14 +91,14 @@ class Genomamin:
 		centerID = random.randint(0,arraylength-1)
 		centerVector = normalData[centerID]
 		seedLocationArray.append(centerVector)
-		valueArray = Genomamin.calcDistances(seedLocationArray, normalData)
+		valueArray = Genomabin.calcDistances(seedLocationArray, normalData)
 		distanceArray = valueArray[0]
 		totalDistance = valueArray[1]
 		arrayLength = valueArray[2]
 		for y in range(0,999):
-			newSeed = Genomamin.generateRandomSeed(normalData, distanceArray, totalDistance)
+			newSeed = Genomabin.generateRandomSeed(normalData, distanceArray, totalDistance)
 			seedLocationArray.append(newSeed)
-			valueArray = Genomamin.calcDistances(seedLocationArray, normalData)
+			valueArray = Genomabin.calcDistances(seedLocationArray, normalData)
 			distanceArray = valueArray[0]
 			totalDistance = valueArray[1]
 		valueArray.append[seedLocationArray]
@@ -112,7 +112,7 @@ class Genomamin:
 		valueArray = [[]]
 		for row in normalData:
 			arrayLength+=1
-			distance = Genomamin.findNearestDistance(row, seedLocationArray)
+			distance = Genomabin.findNearestDistance(row, seedLocationArray)
 			distanceArray[arrayLength] = distance**2 + distanceArray[arrayLength-1]
 		totalDistance = distanceArray[arrayLength]
 		del distanceArray[0]
@@ -125,8 +125,8 @@ class Genomamin:
 		closestDistance = 0
 		closestSeed = seedLocationArray[0]
 		for seedVector in seedLocationArray:
-			if (1-Genomamin.calcCorrelationCoefficient(locus,seedVector) < 1-Genomamin.calcCorrelationCoefficient(locus,closestSeed)):
-				closestDistance = 1-Genomamin.calcCorrelationCoefficient(locus,seedVector)
+			if (1-Genomabin.calcCorrelationCoefficient(locus,seedVector) < 1-Genomabin.calcCorrelationCoefficient(locus,closestSeed)):
+				closestDistance = 1-Genomabin.calcCorrelationCoefficient(locus,seedVector)
 				closestSeed = seedVector
 		return(closestDistance)
 		
@@ -173,17 +173,17 @@ class Genomamin:
 			x+=1
 		while(clusterArray != beforeClusterArray):
 			beforeClusterArray = clusterArray
-			clusterArray = Genomamin.clusterDataLoop(seedLocationArray, normalData, arrayLength)
+			clusterArray = Genomabin.clusterDataLoop(seedLocationArray, normalData, arrayLength)
 			loopIterations += 1 #this value can be printed to show how efficient loop is, as it is how many times it ran
 		
 	def clusterDataLoop(seedLocationArray, normalData, arrayLength):
 		for y in range(0,arrayLength): #should this be arrayLength? #Clusters Data
 			locus = normalData[y]
-			seedIndex = Genomamin.findNearestSeed(locus, seedLocationArray) 
+			seedIndex = Genomabin.findNearestSeed(locus, seedLocationArray) 
 			clusterArray[seedIndex].append(locus)#add the locus to the correct cluster/row, which is the seed index, watch out for mismatch of indexes
 		seedLocationArray = [[]] #Restart Array
 		for cluster in clusterArray:
-			newCenter = Genomamin.updateCenter(cluster)
+			newCenter = Genomabin.updateCenter(cluster)
 			clusterArray[y][0] = newCenter
 			seedLocationArray.append(newCenter) #Not Sure if Correct
 			y+=1
@@ -192,7 +192,7 @@ class Genomamin:
 		closestSeed = seedLocationArray[0]
 		closestSeedIndex = 0
 		for x in range(0,1000):
-			if (abs(1-Genomamin.calcCorrelationCoefficient(locus,seedLocationArray[x])) < abs(1-Genomamin.calcCorrelationCoefficient(locus,closestSeed))):
+			if (abs(1-Genomabin.calcCorrelationCoefficient(locus,seedLocationArray[x])) < abs(1-Genomabin.calcCorrelationCoefficient(locus,closestSeed))):
 				closestSeed = seedLocationArray[x]
 				closestSeedIndex = x
 		return(closestSeedIndex)
