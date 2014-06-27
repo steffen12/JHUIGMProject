@@ -1,9 +1,7 @@
 class Genomamin:
 	import random
-	#import numPy #download NumPy
-	#watch out for global variables, make sure all variable names are distinct
-
-	def run(fNameArray):
+	
+	def run(fNameArray): #fNameArray is an array with all of the file names containing the binary file data, which the user enters
 		rawData = Genomamin.compileRawData(fNameArray)
 		normalData = Genomamin.normalizeArray(rawData)
 		valueArray = Genomamin.generateSeeds(normalData)
@@ -18,19 +16,36 @@ class Genomamin:
 		binValues = array.array('d') #'d' double
 		binValues.fromfile(f,thisBatchCnt)
 		return(binValues)
+
+	def maxMin(array):
+		maximum = 0
+		minimum = array[0]
+		maxMinArray
+		for value in array:
+			if (value > maximum):
+				maximum = value
+			elif (value < minimum):
+				minimum = value
+		maxMinArray.extend((maximum,minimum))
+		return(maxMinArray)
 		
 	def compileRawData(fNameArray):
 		rawDataArray = [[]]
 		for file in fNameArray:
 			arraySection = Genomamin.readBinFile(file)
-			organizedSection = Genomamin.organizeArray(arraySection)
+			maxMinArray = GenomaminmaxMin(file)
+			maximum = maxMinArray[0]
+			minimum = maxMinArray[1]
+			sectionLength = len(arraySection) #THIS NEEDS TO BE USED FOR READING IN ALL VALUES FROM READBINFILE()
+			byteArray = Genomamin.convertToByte(arraySection, sectionLength)
+			organizedSection = Genomamin.organizeArray(byteArray, sectionLength)
 			rawDataArray += organizedSection
 		return(rawDataArray)
 			
-	def organizeArray(arraySection): #possible read in rows?
-		rows = 10
+	def organizeArray(arraySection, sectionLength):
+		rows = sectionLength/193 #rows = loci
 		valueArray = [[0 for x in range(0, 193)] for x in range(0,rows)]
-		column = 0
+		column = 0 #columns = lines of cell data
 		row = 0
 		for value in arraySection:
 			valueArray[row][column] = value
@@ -40,8 +55,12 @@ class Genomamin:
 				column = 0
 		return(valueArray)
 			
-	#def convert(): ##Figure This Out
-		
+	def convertToByte(doubleArray, sectionLength):
+		byteArray = bytearray(sectionLength)
+		for x in range(0, sectionLength):
+			byteArray[x] = doubleArray[x]
+		return(byteArray)
+
 	def normalizeArray(rawData):
 		normalizedArray = [[]]
 		for row in rawData:
@@ -53,7 +72,7 @@ class Genomamin:
 		locusMean = 0
 		locusVariance = 0
 		returnLocus = []
-		cellLines = 4 #make sure this is 193, and correct for any data smaller, or read it in
+		cellLines = 193 #make sure this is 193, or modify it for any smaller test data set
 		for index in range(0,cellLines):
 			locusMean += locus[index]
 		locusMean /= cellLines
@@ -117,7 +136,7 @@ class Genomamin:
 		locus1Variance = 0
 		locus2Variance = 0
 		covariance = 0
-		cellLines = 6 #make sure this is 193, and correct for any data smaller, or read it in
+		cellLines = 193 #make sure this is 193, or modify it for any smaller test data set
 		for index in range(0,cellLines):
 			locus1Mean += locus1[index]
 			locus2Mean += locus2[index]
@@ -155,8 +174,7 @@ class Genomamin:
 		while(clusterArray != beforeClusterArray):
 			beforeClusterArray = clusterArray
 			clusterArray = Genomamin.clusterDataLoop(seedLocationArray, normalData, arrayLength)
-			loopIterations += 1 #this value can be printed to show how efficient loop is, how many times it took
-		return(clusterData)
+			loopIterations += 1 #this value can be printed to show how efficient loop is, as it is how many times it ran
 		
 	def clusterDataLoop(seedLocationArray, normalData, arrayLength):
 		for y in range(0,arrayLength): #should this be arrayLength? #Clusters Data
