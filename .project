@@ -1,0 +1,192 @@
+class Genomamin:
+	import random
+	#import numPy #download NumPy
+	#watch out for global variables, make sure all variable names are distinct
+
+	def run(fNameArray):
+		rawData = Genomamin.compileRawData(fNameArray)
+		normalData = Genomamin.normalizeArray(rawData)
+		valueArray = Genomamin.generateSeeds(normalData)
+		seedLocationArray = valueArray[0]
+		arrayLength = valueArray[1]
+		clusterArray = Genomamin.clusterData(seedLocationArray, normalData, arrayLength)
+		
+	def readBinFile(fName):
+		import sys, traceback, array
+		f = open(fName, 'rb')
+		thisBatchCnt = 1930 #this controls how many values are read in
+		binValues = array.array('d') #'d' double
+		binValues.fromfile(f,thisBatchCnt)
+		return(binValues)
+		
+	def compileRawData(fNameArray):
+		rawDataArray = [[]]
+		for file in fNameArray:
+			arraySection = Genomamin.readBinFile(file)
+			organizedSection = Genomamin.organizeArray(arraySection)
+			rawDataArray += organizedSection
+		return(rawDataArray)
+			
+	def organizeArray(arraySection): #possible read in rows?
+		rows = 10
+		valueArray = [[0 for x in range(0, 193)] for x in range(0,rows)]
+		column = 0
+		row = 0
+		for value in arraySection:
+			valueArray[row][column] = value
+			column += 1
+			if (column == 193):
+				row += 1
+				column = 0
+		return(valueArray)
+			
+	#def convert(): ##Figure This Out
+		
+	def normalizeArray(rawData):
+		normalizedArray = [[]]
+		for row in rawData:
+			normalRow = Genomamin.normalizeData(row)
+			normalizedArray.append[normalRow]
+		return(normalizedArray)
+		
+	def normalizeData(locus):
+		locusMean = 0
+		locusVariance = 0
+		returnLocus = []
+		cellLines = 4 #make sure this is 193, and correct for any data smaller, or read it in
+		for index in range(0,cellLines):
+			locusMean += locus[index]
+		locusMean /= cellLines
+		for index in range(0,cellLines):
+			locusVariance += (locus[index]-locusMean)**2
+		locusVariance /= cellLines
+		locusStandardDev = (locusVariance)**(.5)
+		for index in range(0,cellLines):
+			returnLocus.append((locus[index]-locusMean)/locusStandardDev)
+		return(returnLocus)
+		
+	def generateSeeds(normalData):
+		valueArray = [[]]
+		arrayLength = 0
+		seedLocationArray = [[]]
+		centerID = random.randint(0,arraylength-1)
+		centerVector = normalData[centerID]
+		seedLocationArray.append(centerVector)
+		valueArray = Genomamin.calcDistances(seedLocationArray, normalData)
+		distanceArray = valueArray[0]
+		totalDistance = valueArray[1]
+		arrayLength = valueArray[2]
+		for y in range(0,999):
+			newSeed = Genomamin.generateRandomSeed(normalData, distanceArray, totalDistance)
+			seedLocationArray.append(newSeed)
+			valueArray = Genomamin.calcDistances(seedLocationArray, normalData)
+			distanceArray = valueArray[0]
+			totalDistance = valueArray[1]
+		valueArray.append[seedLocationArray]
+		valueArray.append[arrayLength]
+		return(valueArray)
+		
+	def calcDistances(seedLocationArray, normalData):
+		totalDistance = 0
+		distanceArray = []
+		distanceArray[0] = 0
+		valueArray = [[]]
+		for row in normalData:
+			arrayLength+=1
+			distance = Genomamin.findNearestDistance(row, seedLocationArray)
+			distanceArray[arrayLength] = distance**2 + distanceArray[arrayLength-1]
+		totalDistance = distanceArray[arrayLength]
+		del distanceArray[0]
+		valueArray.append(distanceArray)
+		valueArray.append(totalDistance)
+		valueArray.append(arrayLength)
+		return(valueArray)
+		
+	def findNearestDistance(locus, seedLocationArray):
+		closestDistance = 0
+		closestSeed = seedLocationArray[0]
+		for seedVector in seedLocationArray:
+			if (1-Genomamin.calcCorrelationCoefficient(locus,seedVector) < 1-Genomamin.calcCorrelationCoefficient(locus,closestSeed)):
+				closestDistance = 1-Genomamin.calcCorrelationCoefficient(locus,seedVector)
+				closestSeed = seedVector
+		return(closestDistance)
+		
+	def calcCorrelationCoefficient(locus1, locus2):
+		locus1Mean = 0
+		locus2Mean = 0
+		locus1Variance = 0
+		locus2Variance = 0
+		covariance = 0
+		cellLines = 6 #make sure this is 193, and correct for any data smaller, or read it in
+		for index in range(0,cellLines):
+			locus1Mean += locus1[index]
+			locus2Mean += locus2[index]
+		locus1Mean /= cellLines
+		locus2Mean /= cellLines
+		for index in range(0,cellLines):
+			locus1Variance += (locus1[index]-locus1Mean)**2
+			locus2Variance += (locus2[index]-locus2Mean)**2
+			covariance += (locus1[index]-locus1Mean)*(locus2[index]-locus2Mean)
+		locus1Variance /= cellLines
+		locus2Variance /= cellLines
+		locus1StandardDev = (locus1Variance)**(.5)
+		locus2StandardDev = (locus2Variance)**(.5)
+		covariance /= cellLines
+		correlationCoefficient = covariance/(locus1StandardDev*locus2StandardDev)
+		return(correlationCoefficient) #should this be r^2?
+		
+	def generateRandomSeed(normalData, distanceArray, totalDistance):
+		randomNumber = random.uniform(0,totalDistance)
+		newSeed = 0
+		x = 0
+		while(distanceArray[x] < randomNumber):
+			x+=1
+		newSeed = normalArray[x]
+		return(newSeed)
+		
+	def clusterData(seedLocationArray, normalData, arrayLength):
+		cluserArray = [[[]]] #Watch out for multi-dimensional arrays
+		x = 0
+		y = 0
+		loopIterations = 0
+		for seed in seedLocationArray: #initialize seeds
+			clusterArray[x][0] = seed #may not work
+			x+=1
+		while(clusterArray != beforeClusterArray):
+			beforeClusterArray = clusterArray
+			clusterArray = Genomamin.clusterDataLoop(seedLocationArray, normalData, arrayLength)
+			loopIterations += 1 #this value can be printed to show how efficient loop is, how many times it took
+		return(clusterData)
+		
+	def clusterDataLoop(seedLocationArray, normalData, arrayLength):
+		for y in range(0,arrayLength): #should this be arrayLength? #Clusters Data
+			locus = normalData[y]
+			seedIndex = Genomamin.findNearestSeed(locus, seedLocationArray) 
+			clusterArray[seedIndex].append(locus)#add the locus to the correct cluster/row, which is the seed index, watch out for mismatch of indexes
+		seedLocationArray = [[]] #Restart Array
+		for cluster in clusterArray:
+			newCenter = Genomamin.updateCenter(cluster)
+			clusterArray[y][0] = newCenter
+			seedLocationArray.append(newCenter) #Not Sure if Correct
+			y+=1
+			
+	def findNearestSeed(locus, seedLocationArray): #seeds have already been generated
+		closestSeed = seedLocationArray[0]
+		closestSeedIndex = 0
+		for x in range(0,1000):
+			if (abs(1-Genomamin.calcCorrelationCoefficient(locus,seedLocationArray[x])) < abs(1-Genomamin.calcCorrelationCoefficient(locus,closestSeed))):
+				closestSeed = seedLocationArray[x]
+				closestSeedIndex = x
+		return(closestSeedIndex)
+		
+	def updateCenter(cluster):
+		center = []
+		locusLength = 193
+		lociInCluster = 0
+		for locusRow in cluster:
+			for x in range(0, locusLength):
+				center[x] += locusRow[x]
+			lociInCluster +=1
+		for x in range(0, locusLength):
+			center[x] /= lociInCluster
+		return(center)
