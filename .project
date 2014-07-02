@@ -1,74 +1,93 @@
+import random
 class Genomabin:
-	import random
-	
-	def run(fNameArray): #fNameArray is an array with all of the file names containing the binary file data, which the user enters
-		rawData = Genomabin.compileRawData(fNameArray)
-		normalData = Genomabin.normalizeArray(rawData)
-		valueArray = Genomabin.generateSeeds(normalData)
-		seedLocationArray = valueArray[0]
-		arrayLength = valueArray[1]
-		clusterArray = Genomabin.clusterData(seedLocationArray, normalData, arrayLength)
+	def run(): #fNameArray is an array with all of the file names containing the binary file data, which the user enters ##make this a parameter
+		clustersToMake = 5 #read this in
+		fileNameArray = ['gid_203169_0.bfv', 'gid_203169_1.bfv', 'gid_203169_2.bfv'] #read this in later
+		rawDataArray = Genomabin.compileRawData(fileNameArray)
+		arrayRows = int(len(rawDataArray)/193)  ##THIS WILL BE CHANGED LATER TO A CONSTANT #
+		normalArray = Genomabin.normalizeArray(rawDataArray, arrayRows)
+		byteArray = Genomabin.compileToByte(normalArray, arrayRows)
+		seedLocationArray = Genomabin.generateSeeds(byteArray, arrayRows, clustersToMake)
+		clusterArray = Genomabin.clusterData(seedLocationArray, byteArray, arrayRows, clustersToMake)
+		Genomabin.printClusters(clusterArray, byteArray)
+		#print(Genomabin.length(clusterArray))
+		
+	def length(array):
+		length = 0
+		for line in array:
+			for value in line:
+				length+=1
+		return(length)
+
+	def compileRawData(fileNameArray):
+		print("Compiling Raw Data")
+		rawDataArray = []
+		for file in fileNameArray:
+			arraySection = Genomabin.readBinFile(file)
+			rawDataArray = arraySection #MAKE THIS +=!!!
+		return(rawDataArray)
 		
 	def readBinFile(fName):
+		print("Reading binary file")
 		import sys, traceback, array
 		f = open(fName, 'rb')
-		thisBatchCnt = -1 #this controls how many values are read in
+		thisBatchCnt = 134217604 #this controls how many values are read in
 		binValues = array.array('d') #'d' double
-		binValues.fromfile(f,thisBatchCnt)
+		binValues.fromfile(f, 19300)
+		f.close()
 		return(binValues)
 
-	def maxMin(array):
+	def compileToByte(normalArray, arrayRows):
+		print("Compiling to byte Array")
+		maxMinArray = Genomabin.maxMin(normalArray)
+		maximum = maxMinArray[0] #Determine max and min of arraySection
+		minimum = maxMinArray[1]
+		byteArray = Genomabin.convertToByte(normalArray, arrayRows, maximum, minimum)
+		return(byteArray)
+
+	def maxMin(normalArray):
+		print("Determining max/min values")
 		maximum = 0
-		minimum = array[0]
-		maxMinArray
-		for value in array:
+		minimum = normalArray[0]
+		maxMinArray = []
+		row = []
+		for value in normalArray:
 			if (value > maximum):
 				maximum = value
 			elif (value < minimum):
 				minimum = value
 		maxMinArray.extend((maximum,minimum))
 		return(maxMinArray)
-		
-	def compileRawData(fNameArray):
-		rawDataArray = [[]]
-		for file in fNameArray:
-			arraySection = Genomabin.readBinFile(file)
-			maxMinArray = GenomabinmaxMin(file)
-			maximum = maxMinArray[0]
-			minimum = maxMinArray[1]
-			sectionLength = len(arraySection) #THIS NEEDS TO BE USED FOR READING IN ALL VALUES FROM READBINFILE()
-			byteArray = Genomabin.convertToByte(arraySection, sectionLength)
-			organizedSection = Genomabin.organizeArray(byteArray, sectionLength)
-			rawDataArray += organizedSection
-		return(rawDataArray)
 			
-	def organizeArray(arraySection, sectionLength):
-		rows = sectionLength/193 #rows = loci
-		valueArray = [[0 for x in range(0, 193)] for x in range(0,rows)]
-		column = 0 #columns = lines of cell data
-		row = 0
-		for value in arraySection:
-			valueArray[row][column] = value
-			column += 1
-			if (column == 193):
-				row += 1
-				column = 0
-		return(valueArray)
-			
-	def convertToByte(doubleArray, sectionLength):
-		byteArray = bytearray(sectionLength)
-		for x in range(0, sectionLength):
-			byteArray[x] = doubleArray[x]
+	def convertToByte(normalArray, arrayRows, maximum, minimum):
+		print("Converting array to Bytearray")
+		totalArrayLength = arrayRows *193
+		byteArray = bytearray(totalArrayLength)
+		mapRange = maximum - minimum
+		mapScalar = 255/mapRange
+		for x in range(0, totalArrayLength):
+			mappedValue = normalArray[x]
+			mappedValue -= minimum
+			mappedValue *= mapScalar
+			byteArray[x] = int(mappedValue)
 		return(byteArray)
 
-	def normalizeArray(rawData):
-		normalizedArray = [[]]
-		for row in rawData:
-			normalRow = Genomabin.normalizeData(row)
-			normalizedArray.append[normalRow]
+	def normalizeArray(rawData, arrayRows):
+		print("Begin normalizing data in the array")
+		normalizedArray = []
+		row = []
+		valuesInArray = arrayRows * 193
+		for x in range(0, valuesInArray):
+			row.append(rawData[x])
+			if((x+1) % 193 == 0):
+				normalRow = Genomabin.normalizeData(row)
+				normalizedArray += normalRow
+				row = []
+		#del normalizedArray[0] #THIS IS THE MISSING LINE!
 		return(normalizedArray)
 		
 	def normalizeData(locus):
+		#print("Normalizing data in the array")
 		locusMean = 0
 		locusVariance = 0
 		returnLocus = []
@@ -84,53 +103,50 @@ class Genomabin:
 			returnLocus.append((locus[index]-locusMean)/locusStandardDev)
 		return(returnLocus)
 		
-	def generateSeeds(normalData):
-		valueArray = [[]]
-		arrayLength = 0
-		seedLocationArray = [[]]
-		centerID = random.randint(0,arraylength-1)
-		centerVector = normalData[centerID]
-		seedLocationArray.append(centerVector)
-		valueArray = Genomabin.calcDistances(seedLocationArray, normalData)
-		distanceArray = valueArray[0]
-		totalDistance = valueArray[1]
-		arrayLength = valueArray[2]
-		for y in range(0,999):
-			newSeed = Genomabin.generateRandomSeed(normalData, distanceArray, totalDistance)
-			seedLocationArray.append(newSeed)
-			valueArray = Genomabin.calcDistances(seedLocationArray, normalData)
-			distanceArray = valueArray[0]
-			totalDistance = valueArray[1]
-		valueArray.append[seedLocationArray]
-		valueArray.append[arrayLength]
-		return(valueArray)
+	def generateSeeds(byteArray, arrayRows, clustersToMake):
+		print("Begin generating seeds")
+		seedsLocationArray = []
+		randIntLimit = ((arrayRows-1) * 193) #Total number of values in array minus 193, as randint is inclusive #SHOULD THIS BE -1??
+		centerID = random.randint(0, randIntLimit)
+		centerVector = byteArray[centerID : (centerID +193)]
+		seedsLocationArray.append(centerID)
+		distancesArray = Genomabin.calcDistances(seedsLocationArray, byteArray, arrayRows)
+		for seed in range(0, clustersToMake):
+			totalDistance = distancesArray[-1] #last value of distancesArray, MAKE SURE THIS IS NOT 0!
+			newSeedIndex = Genomabin.generateRandomSeed(byteArray, distancesArray, totalDistance)
+			seedsLocationArray.append(newSeedIndex)
+			distancesArray = Genomabin.calcDistances(seedsLocationArray, byteArray, arrayRows)
+		del seedsLocationArray[1]
+		return(seedsLocationArray)
 		
-	def calcDistances(seedLocationArray, normalData):
-		totalDistance = 0
-		distanceArray = []
-		distanceArray[0] = 0
-		valueArray = [[]]
-		for row in normalData:
-			arrayLength+=1
-			distance = Genomabin.findNearestDistance(row, seedLocationArray)
-			distanceArray[arrayLength] = distance**2 + distanceArray[arrayLength-1]
-		totalDistance = distanceArray[arrayLength]
-		del distanceArray[0]
-		valueArray.append(distanceArray)
-		valueArray.append(totalDistance)
-		valueArray.append(arrayLength)
-		return(valueArray)
+	def calcDistances(seedLocationArray, byteArray, arrayRows): #Caculates distances between each data point and its closest seed, and returns an array with each distance
+		#print("Calculating Distances")
+		dataDistanceArray = [0 for x in range(0, arrayRows)]
+		index = 0
+		arrayRowVector = byteArray[0:193]
+		distance = Genomabin.findNearestDistance(arrayRowVector, seedLocationArray, byteArray)
+		dataDistanceArray[0] = distance**2
+		for arrayRow in range(1, arrayRows): 
+			byteArrayIndex = arrayRow * 193
+			arrayRowVector = byteArray[byteArrayIndex: byteArrayIndex + 193]
+			distance = Genomabin.findNearestDistance(arrayRowVector, seedLocationArray, byteArray)
+			dataDistanceArray[arrayRow] = distance**2 + dataDistanceArray[arrayRow-1]
+		del dataDistanceArray[0] #MAKE SURE THIS DOES NOT DELETE THE ACTUAL FIRST VALUE!!!!!!!!!!!!!!!!!!!!!!!!!
+		return(dataDistanceArray)
 		
-	def findNearestDistance(locus, seedLocationArray):
-		closestDistance = 0
-		closestSeed = seedLocationArray[0]
-		for seedVector in seedLocationArray:
-			if (1-Genomabin.calcCorrelationCoefficient(locus,seedVector) < 1-Genomabin.calcCorrelationCoefficient(locus,closestSeed)):
+	def findNearestDistance(locus, seedLocationArray, byteArray):
+		#print("Finding Nearest Distance")
+		initialSeedIndex = seedLocationArray[0]
+		closestSeed = byteArray[initialSeedIndex : (initialSeedIndex + 193)]
+		closestDistance = 1-Genomabin.calcCorrelationCoefficient(locus,closestSeed)
+		for seedID in seedLocationArray:
+			seedVector = byteArray[seedID: (seedID + 193)]
+			if (1-Genomabin.calcCorrelationCoefficient(locus,seedVector) < closestDistance):
 				closestDistance = 1-Genomabin.calcCorrelationCoefficient(locus,seedVector)
-				closestSeed = seedVector
 		return(closestDistance)
 		
 	def calcCorrelationCoefficient(locus1, locus2):
+		#print("Calculating Correlation Coefficient")
 		locus1Mean = 0
 		locus2Mean = 0
 		locus1Variance = 0
@@ -154,57 +170,82 @@ class Genomabin:
 		correlationCoefficient = covariance/(locus1StandardDev*locus2StandardDev)
 		return(correlationCoefficient) #should this be r^2?
 		
-	def generateRandomSeed(normalData, distanceArray, totalDistance):
-		randomNumber = random.uniform(0,totalDistance)
+	def generateRandomSeed(byteArray, distanceArray, totalDistance): #generating random seed here
+		#print("Generating random seeds")
+		randomNumber = random.uniform(0, totalDistance)
 		newSeed = 0
-		x = 0
-		while(distanceArray[x] < randomNumber):
-			x+=1
-		newSeed = normalArray[x]
-		return(newSeed)
+		newSeedIndex = 0
+		while(distanceArray[newSeedIndex] < randomNumber): #THERE USED TO BE float(distanceArray) HERE
+			newSeedIndex+=1  #newSeedIndex is equal to the index of the seed in seedLocationArray
+		byteArraySeedIndex = newSeedIndex *193
+		return(byteArraySeedIndex)
 		
-	def clusterData(seedLocationArray, normalData, arrayLength):
-		cluserArray = [[[]]] #Watch out for multi-dimensional arrays
-		x = 0
-		y = 0
+	def clusterData(seedLocationArray, byteArray, arrayRows, clustersToMake):
+		print("Clustering data")
+		seedLocationArrayLen = len(seedLocationArray)
+		clusters = clustersToMake
 		loopIterations = 0
-		for seed in seedLocationArray: #initialize seeds
-			clusterArray[x][0] = seed #may not work
-			x+=1
-		while(clusterArray != beforeClusterArray):
+		clusterArray = [[]]
+		beforeClusterArray = clusterArray
+		while((loopIterations == 0) or (clusterArray != beforeClusterArray)): #Make this cleaner
 			beforeClusterArray = clusterArray
-			clusterArray = Genomabin.clusterDataLoop(seedLocationArray, normalData, arrayLength)
+			clusterArray = Genomabin.clusterDataLoop(seedLocationArray, byteArray, arrayRows, clustersToMake)
 			loopIterations += 1 #this value can be printed to show how efficient loop is, as it is how many times it ran
-		
-	def clusterDataLoop(seedLocationArray, normalData, arrayLength):
-		for y in range(0,arrayLength): #should this be arrayLength? #Clusters Data
-			locus = normalData[y]
-			seedIndex = Genomabin.findNearestSeed(locus, seedLocationArray) 
-			clusterArray[seedIndex].append(locus)#add the locus to the correct cluster/row, which is the seed index, watch out for mismatch of indexes
-		seedLocationArray = [[]] #Restart Array
-		for cluster in clusterArray:
-			newCenter = Genomabin.updateCenter(cluster)
-			clusterArray[y][0] = newCenter
-			seedLocationArray.append(newCenter) #Not Sure if Correct
-			y+=1
+		return(clusterArray)
+
+	def clusterDataLoop(seedLocationArray, byteArray, arrayRows, clustersToMake): ##arrayRows = number of vectors in the raw data
+		print("Clustering data in loop")
+		clustersArray = [[] for row in range(0, clustersToMake)] #make this a list instead?
+		clusterID = 0
+		for vectorInitialIndex in range(0,arrayRows): #gets the "row" of the vector
+			vectorCompleteIndex = vectorInitialIndex *193 #multiply index by 193 to find actual index of vector in byteArrat
+			locus = byteArray[vectorCompleteIndex : (vectorCompleteIndex + 193)] #a vector row is the initial index to 192 values after, as each "row" is 193 values long
+			seedIndex = Genomabin.findNearestSeed(locus, seedLocationArray, clustersToMake, byteArray)
+			clustersArray[seedIndex].append(vectorCompleteIndex) #add the vector index to the correct cluster/row, which is the seed index, watch out for mismatch of indexes
+		seedLocationArray = [] #Restart Array
+		for cluster in clustersArray:
+			newCenter = Genomabin.updateCenter(cluster, byteArray)
+			if(newCenter != -1):
+			    seedLocationArray.append(newCenter) #Not Sure if Correct
+			clusterID+=1
+		return(clustersArray)
 			
-	def findNearestSeed(locus, seedLocationArray): #seeds have already been generated
-		closestSeed = seedLocationArray[0]
+	def findNearestSeed(locus, seedLocationArray, clustersToMake, byteArray): #seeds have already been generated
+		#print("Finding the nearest seed")
 		closestSeedIndex = 0
-		for x in range(0,1000):
-			if (abs(1-Genomabin.calcCorrelationCoefficient(locus,seedLocationArray[x])) < abs(1-Genomabin.calcCorrelationCoefficient(locus,closestSeed))):
-				closestSeed = seedLocationArray[x]
+		closestSeed = byteArray[closestSeedIndex : (closestSeedIndex + 193)]
+		for x in range(0, clustersToMake):
+			seedID = seedLocationArray[x]
+			seedVector = byteArray[seedID: (seedID + 193)]
+			if (abs(1-Genomabin.calcCorrelationCoefficient(locus, seedVector)) < abs(1-Genomabin.calcCorrelationCoefficient(locus,closestSeed))):
+				closestSeed = seedVector
 				closestSeedIndex = x
 		return(closestSeedIndex)
 		
-	def updateCenter(cluster):
-		center = []
+	def updateCenter(cluster, byteArray):
+		#print("Updating Center")
 		locusLength = 193
 		lociInCluster = 0
-		for locusRow in cluster:
+		center = [0 for x in range(0, locusLength)]
+		for vectorID in cluster:
 			for x in range(0, locusLength):
-				center[x] += locusRow[x]
+				center[x] += byteArray[vectorID + x] #increment x to go through each value in the "row"
 			lociInCluster +=1
 		for x in range(0, locusLength):
-			center[x] /= lociInCluster
+			if(lociInCluster != 0):
+				center[x] /= lociInCluster
+		if(lociInCluster == 0):
+			center = -1
 		return(center)
+	    
+	def printClusters(clusterArray, byteArray):
+		clusterArrayLen = len(clusterArray)
+		for x in range(0,clusterArrayLen):
+			cluster = clusterArray[x]
+			if cluster:
+				print("Cluster", x+1)
+				for vectorID in cluster:
+					print(vectorID,' ', end='') #vectorID is the row of the normal data
+				print()
+					
+Genomabin.run()
